@@ -3,12 +3,8 @@ import aiohttp
 from more_itertools import chunked
 from models import init_db, People, Session
 import datetime
-import requests
 
 CHUNK_SIZE = 10
-
-# async def paste_to_db(people):
-#     print(people)
 
 
 async def get_url(url, key, session):
@@ -32,27 +28,27 @@ async def get_data(urls, key, session):
 
 async def paste_to_db(people):
     async with Session() as session:
-        for item in people:
-            print(item)
-            if item is None:
-                continue
-            person = People(
-                            # id=int(item['url'].split('/')[-2]),
-                            birth_year=item.get('birth_year'),
-                            eye_color=item.get('eye_color'),
-                            films=await get_data(character_data['films'], 'title', client_session),
-                            gender=item.get('gender'),
-                            hair_color=item.get('hair_color'),
-                            height=item.get('height'),
-                            homeworld=item.get('homeworld'),
-                            mass=item.get('mass'),
-                            name=item.get('name'),
-                            skin_color=item.get('skin_color'),
-                            species=get_names(item.get('species'), session),
-                            starships=get_names(item.get('starships'), session),
-                            vehicles=get_names(item.get('vehicles'), session))
-            session.add(person)
-            await session.commit()
+        async with aiohttp.ClientSession() as as_session:
+            for item in people:
+
+                if item is not None:
+                    person = People(
+                                    # id=int(item['url'].split('/')[-2]),
+                                    birth_year=item.get('birth_year'),
+                                    eye_color=item.get('eye_color'),
+                                    films=await get_data(item['films'], 'title', as_session),
+                                    gender=item.get('gender'),
+                                    hair_color=item.get('hair_color'),
+                                    height=item.get('height'),
+                                    homeworld=item.get('homeworld'),
+                                    mass=item.get('mass'),
+                                    name=item.get('name'),
+                                    skin_color=item.get('skin_color'),
+                                    species=await get_data(item['species'], 'name', as_session),
+                                    starships=await get_data(item['starships'], 'name', as_session),
+                                    vehicles=await get_data(item['vehicles'], 'name', as_session))
+                    session.add(person)
+                    await session.commit()
 
 
 async def get_people(id, session):
